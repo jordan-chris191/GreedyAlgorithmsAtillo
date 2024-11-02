@@ -46,19 +46,12 @@ private:
 public:
    
     void RunMH() {
-        int m, h;
-        cout << "Enter number of mice: ";
-        cin >> m;
-        cout << "Enter number of holes: ";
-        cin >> h;
+        int n;
+        cout << "Enter number of mice and holes: ";
+        cin >> n;
 
-        if (m != h) {
-            cout << "Number of mice and holes must be the same!" << endl;
-            return;
-        }
-
-        mice_pos.resize(m);
-        holes_pos.resize(h);
+        mice_pos.resize(n);
+        holes_pos.resize(n);
 
         input_positions(mice_pos, "mice");
         input_positions(holes_pos, "holes");
@@ -251,6 +244,7 @@ public:
         cout << "+-----------+---------------------+\n";
 
         int lastFinishTime = -1;
+
         for (const auto& activity : activities) {
             if (activity.start >= lastFinishTime) {
                 cout << "| " << setw(9) << activity.index
@@ -299,42 +293,76 @@ private:
 };
 class HuffmanCoding
 {
-    struct Node {
+    struct Node 
+    {
         char data;
         int freq;
         Node* left, * right;
         Node(char data, int freq) : data(data), freq(freq), left(nullptr), right(nullptr) {}
     };
 
-    struct compare {
-        bool operator()(Node* left, Node* right) {
+    struct compare 
+    {
+        bool operator()(Node* left, Node* right) 
+        {
             return left->freq > right->freq;
         }
     };
 
-    void printCodes(Node* root, string str, unordered_map<char, int>& codeLengths) {
+    void printCodes(Node* root, string str, unordered_map<char, string>& huffmanCodes, unordered_map<char, int>& codeLengths) {
         if (!root) return;
 
-        if (root->data != '$') {
-            cout << root->data << ": " << str << endl;
+        if (root->data != '$') 
+        {
+            huffmanCodes[root->data] = str;
             codeLengths[root->data] = str.length(); 
         }
 
-        printCodes(root->left, str + "0", codeLengths);
-        printCodes(root->right, str + "1", codeLengths);
+        printCodes(root->left, str + "0", huffmanCodes, codeLengths);
+        printCodes(root->right, str + "1", huffmanCodes, codeLengths);
     }
 
+    void displayTable(const vector<char>& chars, const vector<int>& freqs, int filledRows) {
+        cout << "+-----------+-----------+----------------+----------------+----------------+\n";
+        cout << "| Character | Frequency | Huffman Code   | Original Bits  | Encoded Bits   |\n";
+        cout << "+-----------+-----------+----------------+----------------+----------------+\n";
+
+        for (int i = 0; i < chars.size(); i++) {
+            if (i <= filledRows) {
+                cout << "| " << setw(9) << left << chars[i]
+                    << " | " << setw(9) << freqs[i]
+                    << " | " << setw(14) << "-" 
+                    << " | " << setw(14) << "-"
+                    << " | " << setw(14) << "-" << " |\n";
+            }
+            else {
+                cout << "| " << setw(9) << left << "-"
+                    << " | " << setw(9) << "-"
+                    << " | " << setw(14) << "-"
+                    << " | " << setw(14) << "-"
+                    << " | " << setw(14) << "-" << " |\n";
+            }
+        }
+        cout << "+-----------+-----------+----------------+----------------+----------------+\n";
+    }
 public:
-    void RunHC() {
+       void RunHC() {
         int n;
         cout << "Enter the number of characters: ";
         cin >> n;
 
         vector<char> chars(n);
         vector<int> freqs(n);
+
+        system("cls");
+        displayTable(chars, freqs, -1);
+
         for (int i = 0; i < n; i++) {
-            cout << "Enter character and its frequency: ";
+            
+            cout << "Enter character " << i + 1 << " and its frequency: ";
             cin >> chars[i] >> freqs[i];
+            system("cls");
+            displayTable(chars, freqs, i);
         }
 
         priority_queue<Node*, vector<Node*>, compare> minHeap;
@@ -353,42 +381,173 @@ public:
             minHeap.push(top);
         }
 
-        cout << "Huffman Codes:" << endl;
+        unordered_map<char, string> huffmanCodes;
         unordered_map<char, int> codeLengths;
-        printCodes(minHeap.top(), "", codeLengths);
+        printCodes(minHeap.top(), "", huffmanCodes, codeLengths);
+
+        system("cls");
+        cout << "+-----------+-----------+----------------+----------------+----------------+\n";
+        cout << "| Character | Frequency | Huffman Code   | Original Bits  | Encoded Bits   |\n";
+        cout << "+-----------+-----------+----------------+----------------+----------------+\n";
 
         int totalBits = 0;
+        int initialBits = 0;
+
         for (int i = 0; i < n; i++) {
-            totalBits += freqs[i] * codeLengths[chars[i]];
+            char ch = chars[i];
+            int freq = freqs[i];
+            int originalBits = 8 * freq; // Assuming 8-bit encoding initially
+            int encodedBits = freq * codeLengths[ch];
+
+            cout << "| " << setw(9) << left << ch
+                 << " | " << setw(9) << freq
+                 << " | " << setw(14) << huffmanCodes[ch]
+                 << " | " << setw(14) << originalBits
+                 << " | " << setw(14) << encodedBits << " |\n";
+
+            initialBits += originalBits;
+            totalBits += encodedBits;
         }
 
-        cout << "Total bit size with Huffman encoding: " << totalBits << " bits" << endl;
+        cout << "+-----------+-----------+----------------+----------------+----------------+\n";
+        cout << "| " << setw(38) << left << "Total"
+             << " | " << setw(14) << initialBits
+             << " | " << setw(14) << totalBits << " |\n";
+        cout << "+-----------+-----------+----------------+----------------+----------------+\n";
+    }
+};
+class CoinChange
+{
+private:
+    void displayCombination(int amount, const vector<float>& coins, int i, vector<vector<int>>& dp, vector<float>& currentCombination, int& count, int& maxCoins, int& minCoins) {
+      
+        if (amount == 0) 
+        {
+            cout << "Combination " << ++count << ": ";
+            for (float coin : currentCombination) {
+                cout << coin << " ";
+            }
+            cout << endl;
+
+            if (currentCombination.size() > maxCoins) {
+                maxCoins = currentCombination.size();
+            }
+
+            if (currentCombination.size() < minCoins) {
+                minCoins = currentCombination.size();
+            }
+            return;
+        }
+        if (i < 0 || amount < 0) return;
+
+        currentCombination.push_back(coins[i]);
+        displayCombination(amount - coins[i], coins, i, dp, currentCombination, count, maxCoins, minCoins);
+        currentCombination.pop_back();
+        displayCombination(amount, coins, i - 1, dp, currentCombination, count, maxCoins, minCoins);
+    }
+
+    int calc(int amount, const vector<float>& coins, int i, vector<vector<int>>& dp)
+    {
+        if (i < 0 || amount < 0)
+            return 0;
+        if (amount == 0)
+            return 1;
+        if (dp[i][amount] != -1)
+            return dp[i][amount];
+        return dp[i][amount] = calc(amount - coins[i], coins, i, dp) + calc(amount, coins, i - 1, dp);
+    }
+
+    int change(int amount, const vector<float>& coins)
+    {
+        vector<vector<int>> dp(coins.size(), vector<int>(amount + 1, -1));
+        return calc(amount, coins, coins.size() - 1, dp);
+    }
+
+public:
+    void RunCC()
+    {
+        int amount;
+        cout << "Enter the amount for which you want to make change: ";
+        cin >> amount;
+
+        vector<float> coins = { 1000, 500, 200, 100, 50, 20, 10, 5, 1};
+        system("cls");
+        cout << "Available coins to use [";
+        for (size_t i = 0; i < coins.size(); ++i) {
+            cout << coins[i];
+            if (i < coins.size() - 1) 
+            {
+                cout << ", ";
+            }
+        }
+        cout << "] to change for "  <<amount << "\n";
+
+        cout << "Step-by-step combinations:\n";
+        vector<vector<int>> dp(coins.size(), vector<int>(amount + 1, -1));
+        vector<float> currentCombination;
+        int count = 0;
+        int maxCoins = 0;
+        int minCoins = INT_MAX;
+        displayCombination(amount, coins, coins.size() - 1, dp, currentCombination, count, maxCoins, minCoins);
+
+        cout << "Total possible combinations of change for amount " << amount << ": " << change(amount, coins) << endl;
+        cout << "Maximum amount of coins in combination for " << amount << ": " << maxCoins <<endl;
+        cout << "Minimum amount of coins in combination for " << amount << ": " << (minCoins == INT_MAX ? 0 : minCoins);
+    }
+};
+class EgyptianFraction {
+private:
+    int numerator;
+    int denominator;
+public:
+    void printEgyptianFraction() {
+        cout << "Enter the numerator and denominator of the fraction (e.g., 2 3 for 2/3): ";
+        cin >> numerator >> denominator;
+        system("cls");
+        cout << "Egyptian Fraction Representation of " << numerator << "/" << denominator << " is: ";
+        while (numerator != 0) {
+            int x = denominator / numerator + (denominator % numerator != 0);
+            cout << "1/" << x << " + ";
+
+        
+            numerator = numerator * x - denominator;
+            denominator = denominator * x;
+        }
+        cout << "\b\b  \n"; 
+    }
+
+    void RunEF() {
+        printEgyptianFraction();
     }
 };
 void showMenu() {
     system("cls");
-    cout << "Select an algorithm to run:" << endl;
+    cout << "Select a Greedy algorithm:" << endl;
     cout << "1. Mice and Holes" << endl;
     cout << "2. Knapsack" << endl;
     cout << "3. Job Sequencing" << endl;
     cout << "4. Activity Selection" << endl;
     cout << "5. Huffman Coding" << endl;
+    cout << "6. Coin Change" << endl;
+    cout << "7. Egyptian Fraction" << endl;
     cout << "0. Exit" << endl;
     cout << "Enter your choice: ";
 }
-
-int main() {
-    int choice;
+void Run()
+{
     MiceAndHoles miceAndHoles;
     Knapsack knapsack;
     JobSequencing jobSequencing;
     ActivitySelection activitySelection;
     HuffmanCoding huffmanCoding;
+    CoinChange coinChange;
+    EgyptianFraction egyptianFraction;
+    int choice;
     do {
         showMenu();
         cin >> choice;
 
-        switch (choice) 
+        switch (choice)
         {
         case 1:
             system("cls");
@@ -420,14 +579,33 @@ int main() {
             cin.get();
             cin.ignore();
             break;
+
+        case 6:
+            system("cls");
+            coinChange.RunCC();
+            cin.get();
+            cin.ignore();
+            break;
+
+        case 7:
+            system("cls");
+            egyptianFraction.RunEF();
+            cin.get();
+            cin.ignore();
+            break;
         case 0:
             system("cls");
             cout << "Exiting program." << endl;
             break;
         default:
             cout << "Invalid choice. Please try again." << endl;
+            cin.get();
+            cin.ignore();
         }
     } while (choice != 0);
+}
 
-    return 0;
+int main() 
+{
+    Run();
 }
